@@ -84,8 +84,12 @@ function install() {
     apt-get -y install avahi-daemon > /dev/null
     echo 62
 
+    # make it appear as Xserve in Finder
+    code='<?xml version="1.0" standalone="no"?><!DOCTYPE service-group SYSTEM "avahi-service.dtd"><service-group><name replace-wildcards="yes">%h</name><service><type>_device-info._tcp</type><port>0</port><txt-record>model=Xserve</txt-record></service></service-group>'
+    echo ${code} >> /etc/avahi/services/afpd.service
+
     # Add user
-    echo "${tm_user}" | tee /var/log/custom_tm_user &> /dev/null # save the chosen custom user
+    echo "${tm_user}" >> /var/log/custom_tm_user # save the chosen custom user
     useradd -c ${tm_user} -m ${tm_user} &> /dev/null
     echo "${tm_user}:${tm_pass}" | chpasswd &> /dev/null
     echo 70
@@ -103,8 +107,9 @@ function install() {
     echo "/home/${tm_user}/timemachine \"${tm_user} - Time Machine\" options:tm allow:${tm_user}" >> /etc/netatalk/AppleVolumes.default
     echo 92
 
-    # Restart netatalk
+    # Restart netatalk and avahi
     sudo service netatalk restart &> /dev/null
+    service avahi-daemon restart &> /dev/null
     echo 100
     sleep 1
   } | whiptail --title "TimeMachine server installer" --gauge "\n\nPlease wait while we are installing everything..." 8 ${c} 0
@@ -177,7 +182,7 @@ function add_user() {
     echo 10
 
     # Add user
-    echo "${tm_user}" | tee /var/log/custom_tm_user &> /dev/null # save the chosen custom user
+    echo "${tm_user}" >> /var/log/custom_tm_user # save the chosen custom user
     useradd -c ${tm_user} -m ${tm_user} &> /dev/null
     echo "${tm_user}:${tm_pass}" | chpasswd &> /dev/null
     echo 70
