@@ -2,8 +2,9 @@
 # With special thanks to: http://dae.me/blog/1660/concisest-guide-to-setting-up-time-machine-server-on-ubuntu-server-12-04/
 
 INSTALL=true
-tm_user="MacBookPro15"
-tm_pass="MacBookPro15"
+user="MacBookPro15"
+pass="MacBookPro15"
+title_of_installer="AFP File Server"
 
 # Find the rows and columns will default to 80x24 is it can not be detected
 screen_size=$(stty size 2>/dev/null || echo 24 80)
@@ -35,41 +36,41 @@ function display_help() {
 function ask_username() {
   if $1 = true
   then
-    tm_user=$(whiptail --inputbox "\n\nWhat's the username that you want to assign?\nSpaces will be truncated.\n" ${r} ${c} "${tm_user}" --title "TimeMachine server installer" 3>&1 1>&2 2>&3)
+    user=$(whiptail --inputbox "\n\nWhat's the username that you want to assign?\nSpaces will be truncated.\n" ${r} ${c} "${user}" --title "${title_of_installer}" 3>&1 1>&2 2>&3)
   else
-    tm_user=$(whiptail --inputbox "\n\nWhat's the username that you want to remove?\nSpaces will be truncated.\n" ${r} ${c} "${tm_user}" --title "TimeMachine server installer - delete" 3>&1 1>&2 2>&3)
+    user=$(whiptail --inputbox "\n\nWhat's the username that you want to remove?\nSpaces will be truncated.\n" ${r} ${c} "${user}" --title "${title_of_installer} - delete" 3>&1 1>&2 2>&3)
   fi
 
   if [ $? -ne 0 ]; then
       echo "You must provide a name... Exiting..."
       exit 1
   fi
-  tm_user_len=$(echo ${#tm_user})
-  if [ ${tm_user_len} -le 0 ]; then
+  user_len=$(echo ${#user})
+  if [ ${user_len} -le 0 ]; then
       echo "The name can't be empty... Exiting..."
       exit 1
   fi
 
   # Remove spaces
-  tm_user=$(echo ${tm_user} | tr -d ' ')
+  user=$(echo ${user} | tr -d ' ')
 }
 
 function ask_password() {
-  tm_pass=$(whiptail --inputbox "\n\nWhat's the password that you want to use?\n" ${r} ${c} "${tm_pass}" --title "TimeMachine server installer" 3>&1 1>&2 2>&3)
+  pass=$(whiptail --inputbox "\n\nWhat's the password that you want to use?\n" ${r} ${c} "${pass}" --title "${title_of_installer}" 3>&1 1>&2 2>&3)
   if [ $? -ne 0 ]; then
       echo "You must provide a password... Exiting..."
       exit 1
   fi
-  tm_pass_len=$(echo ${#tm_user})
-  if [ ${tm_pass_len} -le 0 ]; then
+  pass_len=$(echo ${#user})
+  if [ ${pass_len} -le 0 ]; then
       echo "The password can't be empty... Exiting..."
       exit 1
   fi
 }
 
 function install() {
-  whiptail --title "TimeMachine server installer" --msgbox "\n\nThis installer will setup a clean Ubuntu Server as a TimeMachine backup server.\n\nBefore you continue, make sure that you've set a static IP address." ${r} ${c}
-  whiptail --title "TimeMachine server installer" --msgbox "\n\nNext we will ask for a username and a password. You will need to use these credentials to add the TimeMachine Server to your mac. So choose something logic." ${r} ${c}
+  whiptail --title "${title_of_installer}" --msgbox "\n\nThis installer will setup a clean Ubuntu Server as a TimeMachine backup server.\n\nBefore you continue, make sure that you've set a static IP address." ${r} ${c}
+  whiptail --title "${title_of_installer}" --msgbox "\n\nNext we will ask for a username and a password. You will need to use these credentials to add the TimeMachine Server to your mac. So choose something logic." ${r} ${c}
   ask_username true
   ask_password
 
@@ -89,22 +90,27 @@ function install() {
     echo ${code} >> /etc/avahi/services/afpd.service
 
     # Add user
-    echo "${tm_user}" >> /var/log/custom_tm_user # save the chosen custom user
-    useradd -c ${tm_user} -m ${tm_user} &> /dev/null
-    echo "${tm_user}:${tm_pass}" | chpasswd &> /dev/null
+    echo "${user}" >> /var/log/custom_user # save the chosen custom user
+    useradd -c ${user} -m ${user} &> /dev/null
+    echo "${user}:${pass}" | chpasswd &> /dev/null
     echo 70
 
     # Create timemachine folder inside user timemachine
-    mkdir "/home/${tm_user}/timemachine/" &> /dev/null
-    chown -R ${tm_user} "/home/${tm_user}/timemachine/" &> /dev/null
+    mkdir "/home/${user}/timemachine/" &> /dev/null
+    chown -R ${user} "/home/${user}/timemachine/" &> /dev/null
     echo 78
+  } | whiptail --title "${title_of_installer}" --gauge "\n\nPlease wait while we are installing everything..." 8 ${c} 0
 
-    # Backup configuration
-    mv /etc/netatalk/AppleVolumes.default /etc/netatalk/AppleVolumes.default.old &> /dev/null
+  if ! ( whiptail --title "${title_of_installer}" --yesno "\n\nDo you want to use this AFP Server as a TimeMachine backup server?" ${r} ${c} )
+  then
+      # Backup configuration
+      mv /etc/netatalk/AppleVolumes.default /etc/netatalk/AppleVolumes.default.old &> /dev/null
 
-    # Create new config file
-    echo ":DEFAULT: options:upriv,usedots" > /etc/netatalk/AppleVolumes.default
-    echo "/home/${tm_user}/timemachine \"${tm_user} - Time Machine\" options:tm allow:${tm_user}" >> /etc/netatalk/AppleVolumes.default
+      # Create new config file
+      echo ":DEFAULT: options:upriv,usedots" > /etc/netatalk/AppleVolumes.default
+      echo "/home/${user}/timemachine \"${user} - Time Machine\" options:tm allow:${user}" >> /etc/netatalk/AppleVolumes.default
+  fi
+  {
     echo 92
 
     # Restart netatalk and avahi
@@ -112,17 +118,17 @@ function install() {
     service avahi-daemon restart &> /dev/null
     echo 100
     sleep 1
-  } | whiptail --title "TimeMachine server installer" --gauge "\n\nPlease wait while we are installing everything..." 8 ${c} 0
+  } | whiptail --title "${title_of_installer}" --gauge "\n\nPlease wait while we are installing everything..." 8 ${c} 0
 
   # Get IP-address of server
   ip_address=$(hostname -I)
 
 
   #todo display everything
-  whiptail --title "TimeMachine server installer" --msgbox "\n\nEverything has been installed succesfully. Below you can find the credentials that you'll need to configure TimeMachine backups:\n\n \
+  whiptail --title "${title_of_installer}" --msgbox "\n\nEverything has been installed succesfully. Below you can find the credentials that you'll need to configure TimeMachine backups:\n\n \
     Location:    afp://${ip_address}\n \
-    Username:    ${tm_user}\n \
-    Password:    ${tm_pass}\n\n\
+    Username:    ${user}\n \
+    Password:    ${pass}\n\n\
 To connect your server, use Finder on your Mac: 'Go' -> 'Connect to server...' (or ⌘+K).\n\
 A window will appear where you can enter the information that you can find above.\n\n\
 Once connected, open 'System Preferences' -> 'Time Machine', click 'Select Disk...' and select your server under 'Available Disks'." ${r} ${c}
@@ -130,7 +136,7 @@ Once connected, open 'System Preferences' -> 'Time Machine', click 'Select Disk.
 
 
 function uninstall() {
-  if ! ( whiptail --title "TimeMachine server installer" --yesno "\n\nThis installer will REMOVE all TimeMachine data and users.\n\nare you sure you want to REMOVE EVERYTHING?" ${r} ${c} )
+  if ! ( whiptail --title "${title_of_installer}" --yesno "\n\nThis installer will REMOVE all TimeMachine data and users.\n\nare you sure you want to REMOVE EVERYTHING?" ${r} ${c} )
   then
     exit 0
   fi
@@ -150,29 +156,29 @@ function uninstall() {
     echo 90
 
     # Remove user + backups
-    cat /var/log/custom_tm_user | while read line
+    cat /var/log/custom_user | while read line
     do
       userdel -r "${line}" &> /dev/null
     done
-    rm -f /var/log/custom_tm_user &> /dev/null
+    rm -f /var/log/custom_user &> /dev/null
 
     echo 100
     sleep 1
-  } | whiptail --title "TimeMachine server installer" --gauge "\n\nPlease wait while we are removing everything..." 8 ${c} 0
+  } | whiptail --title "${title_of_installer}" --gauge "\n\nPlease wait while we are removing everything..." 8 ${c} 0
 
-  whiptail --title "TimeMachine server installer" --msgbox "\n\nEverything has been removed succesfully..." ${r} ${c}
+  whiptail --title "${title_of_installer}" --msgbox "\n\nEverything has been removed succesfully..." ${r} ${c}
 }
 
 function add_user() {
   # First check if the install has already run.
   if ! service --status-all | grep 'netatalk' &> /dev/null
   then
-    whiptail --title "TimeMachine server installer" --msgbox "\n\nPlease install everything before adding a second or more users.\nTo install, use the following command:\n\n     sudo ./setup.sh" ${r} ${c}
+    whiptail --title "${title_of_installer}" --msgbox "\n\nPlease install everything before adding a second or more users.\nTo install, use the following command:\n\n     sudo ./setup.sh" ${r} ${c}
     exit 1
   fi
 
-  whiptail --title "TimeMachine server installer" --msgbox "\n\nThis installer will create a new user/timemachine drive." ${r} ${c}
-  whiptail --title "TimeMachine server installer" --msgbox "\n\nNext we will ask for a username and a password. You will need to use these credentials to add the TimeMachine Server to your mac. So choose something logic." ${r} ${c}
+  whiptail --title "${title_of_installer}" --msgbox "\n\nThis installer will create a new user/timemachine drive." ${r} ${c}
+  whiptail --title "${title_of_installer}" --msgbox "\n\nNext we will ask for a username and a password. You will need to use these credentials to add the TimeMachine Server to your mac. So choose something logic." ${r} ${c}
   ask_username true
   ask_password
 
@@ -182,36 +188,36 @@ function add_user() {
     echo 10
 
     # Add user
-    echo "${tm_user}" >> /var/log/custom_tm_user # save the chosen custom user
-    useradd -c ${tm_user} -m ${tm_user} &> /dev/null
-    echo "${tm_user}:${tm_pass}" | chpasswd &> /dev/null
+    echo "${user}" >> /var/log/custom_user # save the chosen custom user
+    useradd -c ${user} -m ${user} &> /dev/null
+    echo "${user}:${pass}" | chpasswd &> /dev/null
     echo 70
 
     # Create timemachine folder for each user
-    mkdir "/home/${tm_user}/timemachine/" &> /dev/null
-    chown -R ${tm_user} "/home/${tm_user}/timemachine/" &> /dev/null
+    mkdir "/home/${user}/timemachine/" &> /dev/null
+    chown -R ${user} "/home/${user}/timemachine/" &> /dev/null
     echo 78
 
     # Create new config file
     echo ":DEFAULT: options:upriv,usedots" >> /etc/netatalk/AppleVolumes.default
-    echo "/home/${tm_user}/timemachine \"${tm_user} - Time Machine\" options:tm allow:${tm_user}" >> /etc/netatalk/AppleVolumes.default
+    echo "/home/${user}/timemachine \"${user} - Time Machine\" options:tm allow:${user}" >> /etc/netatalk/AppleVolumes.default
     echo 92
 
     # Restart netatalk
     sudo service netatalk restart &> /dev/null
     echo 100
     sleep 1
-  } | whiptail --title "TimeMachine server installer" --gauge "\n\nPlease wait while we are installing everything..." 8 ${c} 0
+  } | whiptail --title "${title_of_installer}" --gauge "\n\nPlease wait while we are installing everything..." 8 ${c} 0
 
   # Get IP-address of server
   ip_address=$(hostname -I)
 
 
   #todo display everything
-  whiptail --title "TimeMachine server installer" --msgbox "\n\nEverything has been installed succesfully. Below you can find the credentials that you'll need to configure TimeMachine backups:\n\n \
+  whiptail --title "${title_of_installer}" --msgbox "\n\nEverything has been installed succesfully. Below you can find the credentials that you'll need to configure TimeMachine backups:\n\n \
     Location:    afp://${ip_address}\n \
-    Username:    ${tm_user}\n \
-    Password:    ${tm_pass}\n\n\
+    Username:    ${user}\n \
+    Password:    ${pass}\n\n\
 To connect your server, use Finder on your Mac: 'Go' -> 'Connect to server...' (or ⌘+K).\n\
 A window will appear where you can enter the information that you can find above.\n\n\
 Once connected, open 'System Preferences' -> 'Time Machine', click 'Select Disk...' and select your server under 'Available Disks'." ${r} ${c}
@@ -220,14 +226,14 @@ Once connected, open 'System Preferences' -> 'Time Machine', click 'Select Disk.
 function remove_user() {
   if ! service --status-all | grep 'netatalk' &> /dev/null
   then
-    whiptail --title "TimeMachine server installer" --msgbox "\n\nNothing to remove, everything has been unstalled." ${r} ${c}
+    whiptail --title "${title_of_installer}" --msgbox "\n\nNothing to remove, everything has been unstalled." ${r} ${c}
     exit 1
   fi
   ask_username false
 
-  sed -i "/${tm_user}/d" /var/log/custom_tm_user &> /dev/null
-  userdel -r "${tm_user}" &> /dev/null
-  sed -i "/${tm_user}/d" /etc/netatalk/AppleVolumes.default &> /dev/null
+  sed -i "/${user}/d" /var/log/custom_user &> /dev/null
+  userdel -r "${user}" &> /dev/null
+  sed -i "/${user}/d" /etc/netatalk/AppleVolumes.default &> /dev/null
 
   # Restart netatalk
   sudo service netatalk restart &> /dev/null
