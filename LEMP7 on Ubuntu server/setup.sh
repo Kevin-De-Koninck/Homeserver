@@ -99,8 +99,10 @@ function install() {
   port=$(w_get_string "${title_of_installer}" "\n\nOn what port do you want to connect to PHPMyAdmin?" "12345")
   sed -i "/listen 6969;/c\  listen ${port};" /etc/nginx/sites-available/default
 
-  chown -R $(whoami):$(whoami) /usr/share/nginx/
-  chmod -R 777 /usr/share/nginx/html
+
+  adduser $(who | awk '{print $1;}') www-data
+  chown $(who | awk '{print $1;}'):www-data -R /usr/share/nginx/
+  chmod 755 /usr/share/nginx/html
   service nginx reload
   service nginx restart
 
