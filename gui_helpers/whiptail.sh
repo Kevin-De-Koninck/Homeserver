@@ -55,9 +55,9 @@ function w_ask_yesno {
   if ! [ -z "${4}" ]; then w_no=${4}; else w_no="No"; fi
 
   if ( whiptail --title "${1}" --yesno "${2}" --yes-button "${w_yes}" --no-button "${w_no}" ${r_whiptail} ${c_whiptail} )
-  then # yes
-    return 1
-  else # no
+  then # no
     return 0
+  else # yes
+    return 1
   fi
 }
