@@ -29,7 +29,8 @@
     }
 
     // Place received data in database
-    $sth = $dbh->prepare("INSERT INTO `temphotspot` (`Timestamp`, `Value`) VALUES (CURRENT_TIMESTAMP, $receivedData->temperature)");
+    $sth = $dbh->prepare("INSERT INTO `temphotspot` (`Timestamp`, `Value`) VALUES (CURRENT_TIMESTAMP, :temperature)");
+    $sth->bindParam(':temperature', $receivedData->temperature);
     $sth->execute();
 
     //Make sure to close out the database connection
