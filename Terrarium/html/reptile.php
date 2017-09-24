@@ -140,7 +140,7 @@ $database = &$reptileName;
       <div class="form-group">
         <div class="col-lg-12">
            <form action='functions/reptilePage/downloadDatabase.php' method='post'>
-               <input type='hidden' name='reptileName' value=<?php echo $reptileName ?>>
+               <input type='hidden' name='reptileName' value=<?php echo htmlspecialchars($reptileName, ENT_QUOTES, 'UTF-8'); ?>>
                <input type='hidden' name='table' value=<?php echo $table ?>>
                <input type='submit' value='Download table (*.csv)' class='btn btn-primary col-lg-4' style='margin-right:30px'>
            </form>
