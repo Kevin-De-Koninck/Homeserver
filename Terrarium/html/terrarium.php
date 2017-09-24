@@ -16,7 +16,7 @@ $reptileName = $_POST['reptileName'];
 
         <div class="jumbotron jumbotron-fluid">
           <div class="container">
-            <h1 class="display-3"><?php echo $reptileName; ?></h1>
+            <h1 class="display-3"><?php echo htmlspecialchars($reptileName, ENT_QUOTES, 'UTF-8'); ?></h1>
             <p class="lead">Enclosure information.</p>
           </div>
         </div>
