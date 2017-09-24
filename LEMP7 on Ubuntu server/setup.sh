@@ -3,9 +3,11 @@
 # todo
 # change host name (default = ubuntu)
 
+wget https://raw.githubusercontent.com/Kevin-De-Koninck/Homeserver/master/gui_helpers/whiptail.sh
 source ./whiptail.sh
 INSTALL=true
 title_of_installer="LEMP"
+
 
 # ------------------------------------------------------------------------------
 
